@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Basic Bank Simulation</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
+            color: white;
+            text-align: center;
+            padding: 20px;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        #balances p {
+            font-size: 18px;
+            margin: 5px;
+        }
+        h3 {
+            margin: 15px 0;
+        }
+    </style>
+    <script>
+        async function performAction(action) {
+            const user = document.getElementById(`${action}_user`)?.value || "";
+            const amount = document.getElementById(`${action}_amount`)?.value || 0;
+            const endpoint = `/${action}`;
+            const payload = action === "attack" ? {} : { user, amount };
+
+            const response = await fetch(endpoint, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
+            });
+            const data = await response.json();
+
+            document.getElementById("result").innerText = data.message;
+            animateBalances();
+            updateBalances(data.balances);
+        }
+
+        async function loadBalances() {
+            const response = await fetch("/balances");
+            const data = await response.json();
+            updateBalances(data);
+        }
+
+        function updateBalances(data) {
+            const balancesDiv = document.getElementById("balances");
+            balancesDiv.innerHTML = "";
+            for (const [user, balance] of Object.entries(data.individual)) {
+                const balanceInfo = document.createElement("p");
+                balanceInfo.className = "balance";
+                balanceInfo.innerText = `${user}: ${balance} ETH`;
+                balancesDiv.appendChild(balanceInfo);
+            }
+            document.getElementById("total_balance").innerText = `Total Bank Balance: ${data.total} ETH`;
+        }
+
+        function animateBalances() {
+            anime({
+                targets: '.balance',
+                scale: [1, 1.2, 1],
+                duration: 800,
+                easing: 'easeInOutQuad'
+            });
+
+            anime({
+                targets: '#total_balance',
+                color: ['#ffffff', '#f4c724', '#ffffff'],
+                duration: 1000,
+                easing: 'easeInOutQuad'
+            });
+        }
+
+        window.onload = loadBalances;
+    </script>
+</head>
+<body>
+    <h1>Basic Bank Simulation</h1>
+
+    <h2>Account Balances</h2>
+    <div id="balances"></div>
+    <h3 id="total_balance">Total Bank Balance: 0 ETH</h3>
+
+    <div>
+        <h3>Deposit</h3>
+        <select id="deposit_user">
+            <option>Azizcan</option>
+            <option>Alex</option>
+            <option>Aykut Kocaman Doe</option>
+            <option>Attacker Dünyanın en şirin kadını Ozi</option>
+        </select>
+        <input type="number" id="deposit_amount" placeholder="ETH amount">
+        <button onclick="performAction('deposit')">Deposit</button>
+    </div>
+
+    <div>
+        <h3>Withdraw</h3>
+        <select id="withdraw_user">
+            <option>John Doe</option>
+            <option>Jack Doe</option>
+            <option>Mathilda Doe</option>
+            <option>Attacker</option>
+        </select>
+        <input type="number" id="withdraw_amount" placeholder="ETH amount">
+        <button onclick="performAction('withdraw')">Withdraw</button>
+    </div>
+
+    <div>
+        <h3>Reentrancy Attack</h3>
+        <button onclick="performAction('attack')">Perform Attack</button>
+    </div>
+
+    <p id="result"></p>
+</body>
+</html>
